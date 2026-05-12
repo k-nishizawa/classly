@@ -9,6 +9,7 @@ type Profile = {
   id: string
   email: string
   full_name: string
+  preferred_name: string | null
   role: 'teacher' | 'student' | 'admin'
   school_id: string | null
   schools: { name: string } | null
@@ -42,7 +43,7 @@ export default async function TeacherDashboard() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, school_id, schools(name)')
+    .select('id, email, full_name, preferred_name, role, school_id, schools(name)')
     .eq('id', user.id)
     .single() as { data: Profile | null }
 
@@ -180,7 +181,11 @@ export default async function TeacherDashboard() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Teacher Dashboard</h1>
             <p className="text-slate-500 text-sm mt-0.5">
-              Welcome back, {profile?.full_name || 'Teacher'}
+              Welcome back, {
+                profile?.preferred_name && profile.preferred_name !== profile.full_name
+                  ? `${profile.preferred_name} (${profile.full_name})`
+                  : profile?.full_name || 'Teacher'
+              }
               {profile?.schools?.name ? ` · ${profile.schools.name}` : ''}
             </p>
           </div>

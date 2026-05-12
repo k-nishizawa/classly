@@ -7,11 +7,12 @@ import { createClient } from '@/lib/supabase/client'
 type Mode = 'signin' | 'signup'
 
 export default function LoginPage() {
-  const [mode, setMode]         = useState<Mode>('signin')
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [error, setError]       = useState<string | null>(null)
+  const [mode, setMode]                   = useState<Mode>('signin')
+  const [email, setEmail]                 = useState('')
+  const [password, setPassword]           = useState('')
+  const [fullName, setFullName]           = useState('')
+  const [preferredName, setPreferredName] = useState('')
+  const [error, setError]                 = useState<string | null>(null)
   const [info, setInfo]         = useState<string | null>(null)
   const [loading, setLoading]   = useState(false)
   const router = useRouter()
@@ -40,15 +41,26 @@ export default function LoginPage() {
         router.refresh()
       }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const preferredNameTrimmed = preferredName.trim()
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName.trim() } },
+        options: {
+          data: {
+            full_name:      fullName.trim(),
+            preferred_name: preferredNameTrimmed || null,
+          },
+        },
       })
       if (error) {
         setError(error.message)
         setLoading(false)
       } else {
+        if (preferredNameTrimmed && signUpData.user) {
+          await supabase
+            .from('profiles')
+            .upsert({ id: signUpData.user.id, preferred_name: preferredNameTrimmed }, { onConflict: 'id' })
+        }
         setInfo('Account created. Check your email to confirm, then sign in.')
         setLoading(false)
       }
@@ -79,17 +91,29 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {mode === 'signup' && (
-              <Field label="Full name">
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  autoComplete="name"
-                  placeholder="Jane Smith"
-                  className={inputCls}
-                />
-              </Field>
+              <>
+                <Field label="Full name">
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    autoComplete="name"
+                    placeholder="Jane Smith"
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Preferred name (optional)">
+                  <input
+                    type="text"
+                    value={preferredName}
+                    onChange={(e) => setPreferredName(e.target.value)}
+                    autoComplete="nickname"
+                    placeholder="Jane"
+                    className={inputCls}
+                  />
+                </Field>
+              </>
             )}
 
             <Field label="Email address">

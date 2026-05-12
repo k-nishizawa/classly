@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 type Profile = {
   full_name: string
+  preferred_name?: string | null
   email: string
   role: string
   schools?: { name: string } | null
@@ -47,10 +48,12 @@ export default function Nav({ profile }: { profile: Profile | null }) {
           )}
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700">
-              {(profile?.full_name || profile?.email || '?')[0].toUpperCase()}
+              {(profile?.preferred_name || profile?.full_name || profile?.email || '?')[0].toUpperCase()}
             </div>
             <span className="hidden sm:block text-sm text-slate-700 font-medium max-w-[140px] truncate">
-              {profile?.full_name || profile?.email}
+              {profile?.preferred_name && profile.preferred_name !== profile.full_name
+                ? `${profile.preferred_name} (${profile.full_name})`
+                : profile?.full_name || profile?.email}
             </span>
           </div>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${roleColor}`}>

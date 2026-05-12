@@ -26,7 +26,7 @@ type Member = {
   id: string
   student_id: string
   joined_at: string
-  profiles: { full_name: string; email: string } | null
+  profiles: { full_name: string; preferred_name: string | null; email: string } | null
 }
 
 type AttendanceSession = {
@@ -62,6 +62,7 @@ type Profile = {
   id: string
   email: string
   full_name: string
+  preferred_name: string | null
   role: string
   school_id: string | null
   schools: { name: string } | null
@@ -108,12 +109,13 @@ export default function ClassDetailPage() {
 
     setCls(clsRes.data)
     setProfile({
-      id:        user.id,
-      email:     user.email ?? '',
-      full_name: user.user_metadata?.full_name ?? user.email ?? '',
-      role:      'teacher',
-      school_id: null,
-      schools:   null,
+      id:             user.id,
+      email:          user.email ?? '',
+      full_name:      user.user_metadata?.full_name ?? user.email ?? '',
+      preferred_name: user.user_metadata?.preferred_name ?? null,
+      role:           'teacher',
+      school_id:      null,
+      schools:        null,
     })
 
     await Promise.all([fetchMembers(), fetchSessions(), fetchMessages(), fetchStudentMessages(user.id)])
@@ -123,7 +125,7 @@ export default function ClassDetailPage() {
   async function fetchMembers() {
     const { data } = await supabase
       .from('class_members')
-      .select('id, student_id, joined_at, profiles(full_name, email)')
+      .select('id, student_id, joined_at, profiles(full_name, preferred_name, email)')
       .eq('class_id', classId)
       .order('joined_at', { ascending: false })
     setMembers(((data ?? []) as unknown as Member[]))
@@ -391,11 +393,13 @@ export default function ClassDetailPage() {
                   {members.map(m => (
                     <li key={m.id} className="px-5 py-3.5 flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700 shrink-0">
-                        {(m.profiles?.full_name || m.profiles?.email || '?')[0].toUpperCase()}
+                        {(m.profiles?.preferred_name || m.profiles?.full_name || m.profiles?.email || '?')[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-800">
-                          {m.profiles?.full_name || '—'}
+                          {m.profiles?.preferred_name && m.profiles.preferred_name !== m.profiles.full_name
+                            ? `${m.profiles.preferred_name} (${m.profiles.full_name})`
+                            : m.profiles?.full_name || '—'}
                         </p>
                         <p className="text-xs text-slate-400">{m.profiles?.email}</p>
                       </div>
@@ -463,7 +467,12 @@ export default function ClassDetailPage() {
                         <ul className="divide-y divide-slate-100">
                           {sessionRecs.map(r => {
                             const member = members.find(m => m.student_id === r.student_id)
-                            const name   = member?.profiles?.full_name || member?.profiles?.email || r.student_id
+                            const p      = member?.profiles
+                            const name   = p
+                              ? (p.preferred_name && p.preferred_name !== p.full_name
+                                  ? `${p.preferred_name} (${p.full_name})`
+                                  : p.full_name || p.email)
+                              : r.student_id
                             return (
                               <li key={r.id} className="px-5 py-2.5 flex items-center gap-3">
                                 <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700 shrink-0">
