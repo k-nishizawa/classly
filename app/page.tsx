@@ -10,10 +10,11 @@ type Class = {
 }
 
 export default function Home() {
-  const [classes, setClasses] = useState<Class[]>([])
-  const [role, setRole] = useState<string>('')
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [classes,      setClasses]      = useState<Class[]>([])
+  const [role,         setRole]         = useState<string>('')
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
+  const [loading,      setLoading]      = useState(true)
+  const router  = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
@@ -43,11 +44,43 @@ export default function Home() {
         .from('class_members')
         .select('class_id, classes(id, name)')
         .eq('student_id', user.id)
-      if (data) {
-        setClasses(data.map((d: any) => d.classes).filter(Boolean))
+
+      const studentClasses: Class[] = data
+        ? (data.map((d: any) => d.classes).filter(Boolean) as Class[])
+        : []
+      setClasses(studentClasses)
+
+      if (studentClasses.length > 0) {
+        const classIds = studentClasses.map(c => c.id)
+        const { data: announcements } = await supabase
+          .from('messages')
+          .select('class_id, created_at')
+          .in('class_id', classIds)
+          .eq('is_announcement', true)
+
+        if (announcements) {
+          const counts: Record<string, number> = {}
+          for (const cls of studentClasses) {
+            const lastRead    = localStorage.getItem(`classly_last_read_${cls.id}`)
+            const lastReadDate = lastRead ? new Date(lastRead) : null
+            const unread = announcements.filter(
+              a => a.class_id === cls.id && (!lastReadDate || new Date(a.created_at) > lastReadDate)
+            ).length
+            if (unread > 0) counts[cls.id] = unread
+          }
+          setUnreadCounts(counts)
+        }
       }
     }
     setLoading(false)
+  }
+
+  const handleClassClick = (c: Class) => {
+    if (role === 'student') {
+      localStorage.setItem(`classly_last_read_${c.id}`, new Date().toISOString())
+      setUnreadCounts(prev => { const next = { ...prev }; delete next[c.id]; return next })
+    }
+    router.push(role === 'teacher' ? `/teacher/classes/${c.id}` : `/student/classes/${c.id}`)
   }
 
   const handleLogout = async () => {
@@ -111,14 +144,17 @@ export default function Home() {
               {classes.map((c) => (
                 <li
                   key={c.id}
-                  onClick={() => router.push(
-                    role === 'teacher'
-                      ? `/teacher/classes/${c.id}`
-                      : `/student/classes/${c.id}`
-                  )}
+                  onClick={() => handleClassClick(c)}
                   className="flex justify-between items-center border border-gray-100 rounded-xl p-4 cursor-pointer hover:bg-gray-50 transition"
                 >
-                  <p className="font-semibold text-gray-800">{c.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-800">{c.name}</p>
+                    {unreadCounts[c.id] > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full leading-none">
+                        {unreadCounts[c.id]}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-gray-400">→</span>
                 </li>
               ))}

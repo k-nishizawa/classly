@@ -86,14 +86,26 @@ export default function StudentClassPage() {
 
       supabase
         .from('attendance_sessions')
-        .select('id')
+        .select('id, created_at')
         .eq('class_id', classId),
     ])
 
+    const fetchedRecords  = (recordsRes.data as AttendanceRecord[]) ?? []
+    const allSessions     = sessionsRes.data ?? []
+
+    // Only count sessions that started on or after the student's first attendance
+    const earliestRecord  = fetchedRecords.length > 0
+      ? fetchedRecords.reduce((a, b) => a.marked_at < b.marked_at ? a : b)
+      : null
+    const joinDate        = earliestRecord ? new Date(earliestRecord.marked_at) : null
+    const relevantCount   = joinDate
+      ? allSessions.filter((s: { created_at: string }) => new Date(s.created_at) >= joinDate).length
+      : allSessions.length
+
     if (clsRes.data) setCls(clsRes.data)
     setMessages((messagesRes.data as Message[]) ?? [])
-    setRecords((recordsRes.data as AttendanceRecord[]) ?? [])
-    setTotalSessions(sessionsRes.data?.length ?? 0)
+    setRecords(fetchedRecords)
+    setTotalSessions(relevantCount)
     setLoading(false)
   }
 
@@ -298,5 +310,5 @@ export default function StudentClassPage() {
 }
 
 const inputCls =
-  'w-full px-3 py-2 text-sm border border-slate-300 rounded-lg placeholder-slate-400 ' +
+  'w-full px-3 py-2 text-sm text-gray-900 border border-slate-300 rounded-lg placeholder-slate-400 ' +
   'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition'

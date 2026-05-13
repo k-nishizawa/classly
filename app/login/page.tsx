@@ -13,20 +13,17 @@ export default function LoginPage() {
   const [fullName, setFullName]           = useState('')
   const [preferredName, setPreferredName] = useState('')
   const [error, setError]                 = useState<string | null>(null)
-  const [info, setInfo]         = useState<string | null>(null)
-  const [loading, setLoading]   = useState(false)
+  const [loading, setLoading]             = useState(false)
   const router = useRouter()
 
   function switchMode(next: Mode) {
     setMode(next)
     setError(null)
-    setInfo(null)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setInfo(null)
     setLoading(true)
 
     const supabase = createClient()
@@ -61,8 +58,8 @@ export default function LoginPage() {
             .from('profiles')
             .upsert({ id: signUpData.user.id, preferred_name: preferredNameTrimmed }, { onConflict: 'id' })
         }
-        setInfo('Account created. Check your email to confirm, then sign in.')
-        setLoading(false)
+        router.push('/')
+        router.refresh()
       }
     }
   }
@@ -149,11 +146,6 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            {info && (
-              <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
-                {info}
-              </div>
-            )}
 
             <button
               type="submit"
@@ -196,7 +188,7 @@ export default function LoginPage() {
 }
 
 const inputCls =
-  'w-full px-3 py-2 text-sm border border-slate-300 rounded-lg placeholder-slate-400 ' +
+  'w-full px-3 py-2 text-sm text-gray-900 border border-slate-300 rounded-lg placeholder-slate-400 ' +
   'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
