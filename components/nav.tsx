@@ -30,14 +30,16 @@ export default function Nav({ profile }: { profile: Profile | null }) {
             <span className="font-bold text-slate-900 text-base">Classly</span>
           </Link>
 
-          {profile?.role === 'teacher' || profile?.role === 'admin' ? (
-            <Link
-              href="/teacher"
-              className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
-            >
+          {profile?.role === 'teacher' && (
+            <Link href="/teacher" className="text-sm text-slate-500 hover:text-slate-800 transition-colors">
               Dashboard
             </Link>
-          ) : null}
+          )}
+          {profile?.role === 'admin' && (
+            <Link href="/admin" className="text-sm text-slate-500 hover:text-slate-800 transition-colors">
+              Admin
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center gap-3">

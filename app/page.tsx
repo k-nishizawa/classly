@@ -33,6 +33,8 @@ export default function Home() {
 
     if (profile) setRole(profile.role)
 
+    if (profile?.role === 'admin') { router.push('/admin'); return }
+
     if (profile?.role === 'teacher') {
       const { data } = await supabase
         .from('classes')
