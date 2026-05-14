@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 
 type Mode = 'signin' | 'signup'
 
@@ -181,6 +182,13 @@ export default function LoginPage() {
 
         <p className="text-center text-xs text-slate-400 mt-6">
           For language schools — teachers, students, and administrators
+        </p>
+
+        <p className="text-center text-sm text-slate-500 mt-3">
+          Setting up a new school?{' '}
+          <Link href="/onboarding" className="text-indigo-600 font-medium hover:underline">
+            Get started here →
+          </Link>
         </p>
       </div>
     </div>
