@@ -90,7 +90,7 @@ export default function TeacherInvitePage() {
       .from('profiles')
       .upsert({
         id:             userId,
-        email:          signUpData.user.email,
+        email:          signUpData.user?.email ?? email,
         full_name:      fullName.trim(),
         preferred_name: preferredNameTrimmed || null,
         role:           'teacher',
